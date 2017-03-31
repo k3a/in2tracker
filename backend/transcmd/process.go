@@ -23,11 +23,13 @@ type transactionWithAmount struct {
 }
 
 type TransactionProcessor struct {
-	Transactions []*processorTransaction
-	Store        *store.Store
+	currencyCache   *CurrencyCache
+	Transactions    []*processorTransaction
+	Store           *store.Store
+	PrimaryCurrency currency.Currency
 }
 
-func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store) *TransactionProcessor {
+func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store, primaryCurrency currency.Currency) *TransactionProcessor {
 	var trsToProcess []*processorTransaction
 	duplicates := make(map[string]bool)
 
@@ -52,7 +54,12 @@ func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store
 		return trsToProcess[i].Transaction.Time.After(trsToProcess[j].Transaction.Time)
 	})
 
-	return &TransactionProcessor{trsToProcess, storePtr}
+	return &TransactionProcessor{
+		NewCurrencyCache(storePtr),
+		trsToProcess,
+		storePtr,
+		primaryCurrency,
+	}
 }
 
 func (tp *TransactionProcessor) findOldestAvailableBuys(item string, neededAmount float64, notAfter time.Time) (trs []*transactionWithAmount, missingQuantity float64) {
@@ -107,8 +114,7 @@ func (tp *TransactionProcessor) findFeeCurrencyForItem(item string) currency.Cur
 	return currency.Invalid
 }
 
-// Process processes sells to find gain and loss
-func (tp *TransactionProcessor) Process() error {
+func (tp *TransactionProcessor) fixMissingCurrencies() {
 	// fix missing currencies (that happens mainly because of splits)
 	// this works by assuming the currency never changes for a ticker
 	for _, t := range tp.Transactions {
@@ -119,6 +125,11 @@ func (tp *TransactionProcessor) Process() error {
 			t.Transaction.FeeCurrency = tp.findFeeCurrencyForItem(t.Transaction.Item)
 		}
 	}
+}
+
+// Process processes sells to find gain and loss
+func (tp *TransactionProcessor) Process() (*ProcessResult, error) {
+	tp.fixMissingCurrencies()
 
 	// set initial numbers
 	for _, ptr := range tp.Transactions {
@@ -127,8 +138,8 @@ func (tp *TransactionProcessor) Process() error {
 		}
 	}
 
-	// totals
-	totalGainLoss := make(map[currency.Currency]float64)
+	// result obj
+	processRes := NewProcessResult(tp.PrimaryCurrency)
 
 	now := time.Now()
 	firstDayOfPreviousYear := time.Date(now.Year()-1, 1, 1, 0, 0, 0, 0, now.Location())
@@ -145,16 +156,16 @@ func (tp *TransactionProcessor) Process() error {
 		if ptr.Transaction.Type == importers.TTSell {
 			sellTr := ptr.Transaction
 
-			// sell gain
-			sellGain := sellTr.Quantity * sellTr.Price
-			fee, err := currency.Convert(sellTr.Fee, sellTr.FeeCurrency, sellTr.Currency, sellTr.Time)
+			// sell gain in primary currency
+			gainInPrimary, err := tp.currencyCache.Convert(
+				sellTr.NetTotal, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			sellGain -= fee
+			processRes.TotalRevenuesInPrimaryCurrency += gainInPrimary
 
 			// print
-			fmt.Printf("* %s - SOLD %.2f items for %.2f on %s\n", sellTr.Item, sellTr.Quantity, sellGain, sellTr.Time)
+			fmt.Printf("* %s - SOLD %.2f items for %.2f on %s\n", sellTr.Item, sellTr.Quantity, sellTr.NetTotal, sellTr.Time)
 
 			// find relevant buys
 			buys, remain := tp.findOldestAvailableBuys(sellTr.Item, sellTr.Quantity, sellTr.Time)
@@ -172,10 +183,10 @@ func (tp *TransactionProcessor) Process() error {
 				buyCost += buy.Amount * buyTr.Price
 
 				// cost fee fraction converted to transaction currency
-				fee, err := currency.Convert(buyTr.Fee/buyTr.Quantity*buy.Amount,
+				fee, err := tp.currencyCache.Convert(buyTr.Fee/buyTr.Quantity*buy.Amount,
 					buyTr.FeeCurrency, buyTr.Currency, buyTr.Time)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				buyCost += fee
 
@@ -188,29 +199,32 @@ func (tp *TransactionProcessor) Process() error {
 			}
 			ptr.BuyCost = buyCost
 
-			thisGainLoss := sellGain - ptr.BuyCost
+			// buy cost in primary
+			buyCostInPrimary, err := tp.currencyCache.Convert(
+				ptr.BuyCost, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
+			if err != nil {
+				return nil, err
+			}
+			processRes.TotalExpensesInPrimaryCurrency += buyCostInPrimary
+
+			thisGainLoss := sellTr.NetTotal - ptr.BuyCost
 			fmt.Printf("  => gainLoss: %.2f %s \n\n", thisGainLoss, sellTr.Currency)
 
-			prevTotalGainLoss, _ := totalGainLoss[sellTr.Currency]
+			// add to total gain/loss for the currency
+			prevTotalGainLoss, _ := processRes.TotalGainLossByCurrency[sellTr.Currency]
 			prevTotalGainLoss += thisGainLoss
-			totalGainLoss[sellTr.Currency] = prevTotalGainLoss
+			processRes.TotalGainLossByCurrency[sellTr.Currency] = prevTotalGainLoss
 		}
 	}
 
-	// print totals
-	fmt.Printf("\nTOTALS:\n")
-	for c, t := range totalGainLoss {
-		fmt.Printf("* %.2f %s\n", t, c)
-	}
-
-	return nil
+	return processRes, nil
 }
 
 // PrintTransactions prints all transactions
 func (tp *TransactionProcessor) PrintTransactions() error {
 	for _, ptr := range tp.Transactions {
 		t := ptr.Transaction
-		fmt.Printf("%s\n", t)
+		fmt.Printf("%s\n", t.String())
 	}
 	return nil
 }

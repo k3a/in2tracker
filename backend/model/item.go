@@ -5,6 +5,7 @@ type Item struct {
 	ID        int64  `meddler:"id,pk"`
 	MarketID  int64  `meddler:"market_id"`
 	CountryID int64  `meddler:"country_id"`
+	Code      string `meddler:"code"`
 	Name      string `meddler:"name"`
 	Address   string `meddler:"address"`
 }

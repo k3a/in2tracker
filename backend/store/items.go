@@ -14,6 +14,13 @@ func (s *Store) GetItem(id int64) (*model.Item, error) {
 	return item, err
 }
 
+func (s *Store) GetItemByCode(code string) (*model.Item, error) {
+	item := new(model.Item)
+	err := meddler.QueryRow(s.db, item, `SELECT * FROM `+itemsTable+
+		` WHERE code = ?`, code)
+	return item, err
+}
+
 func (s *Store) CreateItem(item *model.Item) error {
 	return meddler.Insert(s.db, itemsTable, item)
 }

@@ -42,7 +42,6 @@ CREATE TABLE IF NOT EXISTS `currency_pairs` (
   `dst_currency_id` INT NOT NULL,
   `multiplier` DOUBLE NOT NULL,
   PRIMARY KEY (`date`, `src_currency_id`, `dst_currency_id`),
-  UNIQUE (`src_currency_id` ASC, `dst_currency_id` ASC),
   CONSTRAINT `fk_currency_pairs_1`
     FOREIGN KEY (`src_currency_id` , `dst_currency_id`)
     REFERENCES `currencies` (`id` , `id`)

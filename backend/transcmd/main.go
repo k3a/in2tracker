@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
+	"k3a.me/money/backend/currency"
 	"k3a.me/money/backend/importers"
 	"k3a.me/money/backend/store"
 )
@@ -41,15 +42,28 @@ func main() {
 	storePtr := store.New("sqlite3", "database.db")
 
 	// do the job
-	proc := NewTransactionProcessor(trs, storePtr)
+	proc := NewTransactionProcessor(trs, storePtr, currency.CZK)
 
 	if args.TransactionsOnly {
 		if err := proc.PrintTransactions(); err != nil {
 			panic(err)
 		}
 	} else {
-		if err := proc.Process(); err != nil {
+		// process
+		res, err := proc.Process()
+		if err != nil {
 			panic(err)
+		}
+
+		// print exp/rev in primary currency
+		fmt.Printf("\nTOTAL IN %s:\n", proc.PrimaryCurrency)
+		fmt.Printf("* Expenses: %.2f %s\n", res.TotalExpensesInPrimaryCurrency, proc.PrimaryCurrency)
+		fmt.Printf("* Revenues: %.2f %s\n", res.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
+
+		// print totals
+		fmt.Printf("\nTOTAL GAIN/LOSS IN ORIGINAL CURRENCIES:\n")
+		for c, t := range res.TotalGainLossByCurrency {
+			fmt.Printf("* %.2f %s\n", t, c)
 		}
 	}
 }

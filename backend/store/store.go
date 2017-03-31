@@ -86,7 +86,7 @@ func migrateDatabase(driver string, db *sql.DB) error {
 	var migrations = &migrate.AssetMigrationSource{
 		Asset:    ddl.Asset,
 		AssetDir: ddl.AssetDir,
-		Dir:      "mysql", // load from mysql directory by default
+		Dir:      driver, // load DDL for the driver
 	}
 	_, err := migrate.Exec(db, driver, migrations, migrate.Up)
 	return err

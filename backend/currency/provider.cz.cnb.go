@@ -70,7 +70,7 @@ func (c *CZCNB) GetRate(from Currency, to Currency, at time.Time) (float64, erro
 	}
 
 	url := fmt.Sprintf("http://www.cnb.cz/cs/financni_trhy/devizovy_trh/kurzy_devizoveho_trhu/"+
-		"denni_kurz.txt?date=02%d.02%d.04%d", at.Day(), at.Month(), at.Year())
+		"denni_kurz.txt?date=%02d.%02d.%04d", at.Day(), at.Month(), at.Year())
 
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
@@ -109,7 +109,7 @@ func (c *CZCNB) GetRate(from Currency, to Currency, at time.Time) (float64, erro
 		// unable to parse isssue date from the header
 		return 0, ErrBadFormat
 	}
-	if time.Since(issued) > 5*24*time.Hour {
+	if at.Sub(issued) > 5*24*time.Hour {
 		return 0, ErrOldData
 	}
 
