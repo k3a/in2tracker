@@ -1,0 +1,28 @@
+Pøehled operací pro portfolio"Nekdo"
+Vytvoøeno: 14.01.2017 18:57:09
+Období: 15.1.2016 - 14.1.2017
+
+
+
+
+Datum obchodu;Smìr;Symbol;Cena;Poèet;Mìna;Objem v CZK;Poplatky v CZK;Objem v USD;Poplatky v USD;Objem v EUR;Poplatky v EUR;Text FIO;
+12.01.2017 15:56;Nákup;SWKS;75,30;7,00;USD;;;-535,05;7,95;;;Nákup;
+04.01.2017 15:31;Prodej;TM;120,52;6,00;USD;;;715,14;7,98;;;Prodej;
+10.01.2017 00:00;Bankovní pøevod;;;0,00;EUR;;;;;-10,00;0,00;Pøevod na úèet - Fio banka 2501135842;
+09.12.2016 00:00;;TM;1,00;-1,63;USD;;;-1,63;0,00;;;TM - Daò z divid. zaplacená v USA;
+09.12.2016 00:00;;TM;1,00;-0,12;USD;;;-0,12;0,00;;;TM - ADR Fee;
+09.12.2016 00:00;;TM;1,00;10,63;USD;;;10,63;0,00;;;TM - Dividenda - USA;
+09.11.2016 13:50;;;;0,00;EUR;;;;;-0,74;0,74;Poplatek za pøevod na OU;
+09.11.2016 00:00;;;;0,00;EUR;;;;;2 000,00;0,00;Vloženo na úèet z CZ2322000000000209619847/CEKOCZPP (SHA) (ZPP:PATRIA FINANCE, A.S.) Bezhotovostní vklad;
+10.06.2016 09:19;Pøevod mezi mìnami;EUR;1,1609395;891,95;USD;;;-1 035,50;0,00;;;Nákup;
+31.05.2016 00:00;Prodej;LHA*A;0,00;86,00;;;;;;;;Odebrání práv volitelné dividendy;
+19.05.2016 00:00;;PAC;1,00;25,83;USD;;;25,83;0,00;;;PAC - Return of Principal;
+13.05.2016 00:00;;SNDK*;1,00;1 485,00;USD;;;1 485,00;0,00;;;SNDK - Stock Merger (0.2387 WDC & USD 67.50 p/s);
+13.05.2016 00:00;Prodej;SNDK*;0,00;22,00;;;;;;;;Stock Merger (0.2387 WDC & USD 67.50 p/s);
+13.05.2016 00:00;Nákup;WDC;0,00;5,00;;;;;;;;Stock Merger (0.2387 WDC & USD 67.50 p/s);
+28.04.2016 00:00;;LHA;1,00;86,00;LHA*A;;;;;;;LHA - Distribuce práv volitelné dividendy;
+11.03.2016 00:00;;MCHP;1,00;0,34;USD;;;0,34;0,00;;;MCHP - Refundable U.S. Fed Tax Reclassified By Issuer - 4.6.2015;
+11.03.2016 00:00;;MCHP;1,00;0,86;USD;;;0,86;0,00;;;MCHP - Refundable U.S. Fed Tax Reclassified By Issuer - 9.3.2015;
+29.12.2015 00:00;Nákup;NKE;0,00;30,00;;;;;;;;Split : NKE - 1 : 2,0000;
+;;Souèet;;;;-284,18;12,8;458,53;41,67;219,5;1,9;;
+
