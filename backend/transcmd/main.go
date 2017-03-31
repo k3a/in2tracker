@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
-	_ "github.com/mattn/go-sqlite3" //sqlite driver
 	"k3a.me/money/backend/importers"
 	"k3a.me/money/backend/store"
 )
@@ -39,7 +38,7 @@ func main() {
 	}
 
 	// open store
-	storePtr := store.New("sqlite", "database.db")
+	storePtr := store.New("sqlite3", "database.db")
 
 	// do the job
 	proc := NewTransactionProcessor(trs, storePtr)

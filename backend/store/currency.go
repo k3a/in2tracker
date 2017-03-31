@@ -9,6 +9,9 @@ import (
 	"k3a.me/money/backend/model"
 )
 
+const currenciesTable = "currencies"
+const currencyPairsTable = "currency_pairs"
+
 // GetCurrency returns currency detail for specified currency code
 func (s *Store) GetCurrency(code currency.Currency) (*model.Currency, error) {
 	var c model.Currency
@@ -32,7 +35,7 @@ func (s *Store) GetOrCreateCurrency(code currency.Currency) *model.Currency {
 		Name: code.Name(),
 	}
 
-	err = meddler.Insert(s.db, "currencies", def)
+	err = meddler.Insert(s.db, currenciesTable, def)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -54,7 +57,7 @@ func (s *Store) GetCurrencyMultiplier(date time.Time, from currency.Currency, to
 	}
 
 	var cp model.CurrencyPair
-	err = meddler.QueryRow(s.db, &cp, `SELECT * FROM currency_pairs 
+	err = meddler.QueryRow(s.db, &cp, `SELECT * FROM `+currencyPairsTable+` 
 		WHERE src_currency_id = $1 AND dst_currency_id = $2 AND date = $3`,
 		src.ID, dst.ID, date.UTC()) // time is always stored in UTC in the DB
 	if err != nil {
@@ -76,7 +79,7 @@ func (s *Store) StoreCurrencyMultiplier(date time.Time, from currency.Currency, 
 		return e("unable to create currency")
 	}
 
-	return meddler.Save(s.db, "currency_pairs", &model.CurrencyPair{
+	return meddler.Save(s.db, currencyPairsTable, &model.CurrencyPair{
 		Date:          date,
 		SrcCurrencyID: src.ID,
 		DstCurrencyID: dst.ID,
