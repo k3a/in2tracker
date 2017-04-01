@@ -46,7 +46,7 @@ func (tt TransactionType) String() string {
 
 // Transaction represents an imported transaction
 type Transaction struct {
-	// time when the transaction happend
+	// time when the transaction happened
 	Time time.Time
 	// type of the transaction
 	Type TransactionType
@@ -60,7 +60,7 @@ type Transaction struct {
 	NetTotal float64
 	// currency of the buy/sell transaction (should apply to both Price and NetTotal)
 	Currency currency.Currency
-	// fee and commision paid to the exchange or someone else - UNSIGNED
+	// fee and commission paid to the exchange or someone else - UNSIGNED
 	Fee float64
 	// fee currency
 	FeeCurrency currency.Currency

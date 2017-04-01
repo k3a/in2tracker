@@ -71,7 +71,7 @@ type Provider interface {
 // Providers holds all available currency rate providers
 var Providers []Provider
 
-// RegisterProvider registers a new currency convertion provider
+// RegisterProvider registers a new provider
 func RegisterProvider(provider Provider) {
 	for _, p := range Providers {
 		if p == provider {

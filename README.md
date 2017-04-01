@@ -5,7 +5,9 @@
 
 # In2Tracker - Intelligent Investment Tracker
 
-<span style="color:darkred">Warning: In early and active development - you can expect many changes over time.</span>
+```diff
+- Warning: In early and active development - you can expect many changes over time!
+```
 
 This [free and open-source project](https://en.wikipedia.org/wiki/Free_software) helps tracking investments easier.
 

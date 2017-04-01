@@ -17,7 +17,7 @@ var (
 	ErrOldData      = e("provider received old data")
 )
 
-// Provider provides a currency convertion
+// Provider provides a currency conversion
 type Provider interface {
 	// Name returns the name of the provider
 	Name() string
@@ -36,7 +36,7 @@ type Provider interface {
 // Providers holds all available currency rate providers
 var Providers []Provider
 
-// RegisterProvider registers a new currency convertion provider
+// RegisterProvider registers a new provider
 func RegisterProvider(provider Provider) {
 	for _, p := range Providers {
 		if p == provider {

@@ -101,7 +101,7 @@ func (c *CZCNB) GetRate(from Currency, to Currency, at time.Time) (float64, erro
 	// check the garbage - parse the date
 	headerParts := strings.Split(csv.GarbageString(), " ")
 	if len(headerParts) < 2 {
-		// wrong format (shoudl be similar to "06.01.2017 #5")
+		// wrong format (should be similar to "06.01.2017 #5")
 		return 0, ErrBadFormat
 	}
 	issued, err := time.Parse("02.01.2006", headerParts[0])

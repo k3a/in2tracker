@@ -73,7 +73,7 @@ func (r *CSVReader) Read(dest []byte) (n int, err error) {
 		return read, nil
 	}
 
-	// parse header, skipping unnecesary lines until a header is found
+	// parse header, skipping unnecessary lines until a header is found
 	numSepsInLine := 0
 	for {
 		readRune, n, err := r.reader.ReadRune()
