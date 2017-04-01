@@ -7,7 +7,7 @@
 
 <span style="color:darkred">Warning: In early and active development - you can expect many changes over time.</span>
 
-This [https://en.wikipedia.org/wiki/Free_software](free and open-source project) helps tracking investments easier.
+This [free and open-source project](https://en.wikipedia.org/wiki/Free_software) helps tracking investments easier.
 
 ## Features
 
@@ -43,7 +43,7 @@ BUDE POPSÁN
 
 ## Issues
 
-[https://github.com/k3a/in2tracker/issues](Report issues) on GitHub. 
+[Report issues](https://github.com/k3a/in2tracker/issues) on GitHub. 
 Please note that I am very busy most of the time and can't react to every issue immediately.
 If you have programming skills, please consider helping me by contributing pull requests.
 
