@@ -9,6 +9,9 @@
 
 This [free and open-source project](https://en.wikipedia.org/wiki/Free_software) helps tracking investments easier.
 
+Primarily developed as a side-project to help me with my investments, improve my code design, Go language skills and learn a new web framework.
+At the same time it may help others! You are free to use the code for any purpose according to the license and you can contribute to the project as well.
+
 ## Features
 
 * Support for multiple types of investment (currently stock and items only)
