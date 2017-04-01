@@ -25,6 +25,9 @@ type transactionWithAmount struct {
 	Amount      float64
 }
 
+// TransactionProcessor is used to process transactions to prepare financial results.
+// PrimaryCurrency is the main currency to which we want to convert some
+// types of financtial amounts to (probably taxpayer's national currency).
 type TransactionProcessor struct {
 	store           *store.Store
 	currencyCache   *CurrencyCache
@@ -32,6 +35,11 @@ type TransactionProcessor struct {
 	PrimaryCurrency currency.Currency
 }
 
+// NewTransactionProcessor creates a new transaction processor.
+// trs - transactions to process (can contain duplicates)
+// storePtr - pointer to store to find/store country and currency data
+// primaryCurrency -the main currency to which we want to convert some
+// types of financtial amounts to (probably taxpayer's national currency).
 func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store, primaryCurrency currency.Currency) *TransactionProcessor {
 	var trsToProcess []*processorTransaction
 	duplicates := make(map[string]bool)
@@ -65,6 +73,10 @@ func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store
 	}
 }
 
+// findOldestAvailableBuys finds oldest buy-type transactions containing needAmount
+// amount of items. Argument notAfter specifies the latest time at which
+// the buy transaction could have happened.
+// Returns list of transactions with amount and remaining quantity which couldn't be found.
 func (tp *TransactionProcessor) findOldestAvailableBuys(item string, neededAmount float64, notAfter time.Time) (trs []*transactionWithAmount, missingQuantity float64) {
 	if len(tp.Transactions) == 0 {
 		return nil, neededAmount
@@ -95,6 +107,7 @@ func (tp *TransactionProcessor) findOldestAvailableBuys(item string, neededAmoun
 	return trs, neededAmount
 }
 
+// findCurrencyForItem finds item currency from historical transactions
 func (tp *TransactionProcessor) findCurrencyForItem(item string) currency.Currency {
 	// from the oldest.. (thus revere)
 	for it := len(tp.Transactions) - 1; it >= 0; it-- {
@@ -106,6 +119,7 @@ func (tp *TransactionProcessor) findCurrencyForItem(item string) currency.Curren
 	return currency.Invalid
 }
 
+// findFeeCurrencyForItem finds item fee currency from historical transactions
 func (tp *TransactionProcessor) findFeeCurrencyForItem(item string) currency.Currency {
 	// from the oldest.. (thus revere)
 	for it := len(tp.Transactions) - 1; it >= 0; it-- {
@@ -117,9 +131,9 @@ func (tp *TransactionProcessor) findFeeCurrencyForItem(item string) currency.Cur
 	return currency.Invalid
 }
 
+// fixMissingCurrencies fixes missing currencies (that happens mainly because
+// of splits). This works by assuming the currency never changes for the item.
 func (tp *TransactionProcessor) fixMissingCurrencies() {
-	// fix missing currencies (that happens mainly because of splits)
-	// this works by assuming the currency never changes for a ticker
 	for _, t := range tp.Transactions {
 		if t.Transaction.Currency == currency.Invalid {
 			t.Transaction.Currency = tp.findCurrencyForItem(t.Transaction.Item)
@@ -130,6 +144,7 @@ func (tp *TransactionProcessor) fixMissingCurrencies() {
 	}
 }
 
+// processSell processes the sell-type transaction
 func (tp *TransactionProcessor) processSell(processRes *ProcessResult, ptr *processorTransaction) error {
 	sellTr := ptr.Transaction
 
@@ -201,13 +216,13 @@ func (tp *TransactionProcessor) processSell(processRes *ProcessResult, ptr *proc
 	fmt.Printf("  => gainLoss: %.2f %s \n\n", thisGainLoss, sellTr.Currency)
 
 	// add to total net gain/loss for the currency
-	prevTotalGainLoss, _ := processRes.TotalGainLossByCurrency[sellTr.Currency]
-	prevTotalGainLoss += thisGainLoss
-	processRes.TotalGainLossByCurrency[sellTr.Currency] = prevTotalGainLoss
+	processRes.TotalGainLossByCurrency[sellTr.Currency] += thisGainLoss
 
 	return nil
 }
 
+// processDividend processes the dividend-type transaction
+// (transactions with positive net total being income and negative being taxes)
 func (tp *TransactionProcessor) processDividend(processRes *ProcessResult, ptr *processorTransaction) error {
 	tr := ptr.Transaction
 
@@ -273,10 +288,10 @@ func (tp *TransactionProcessor) processDividend(processRes *ProcessResult, ptr *
 		}
 
 		// item totals
-		processItem.RevenueInPrimaryCurrency += revenueInPrimary
+		processItem.DividendIncomeInPrimaryCurrency += revenueInPrimary
 
 		// country totals
-		processRes.Countries[processItem.Country.Name].TotalRevenuesInPrimaryCurrency += revenueInPrimary
+		processRes.Countries[processItem.Country.Name].TotalDividendIncomeInPrimaryCurrency += revenueInPrimary
 	} else {
 		// tax paid
 		taxPaid := -tr.NetTotal
@@ -288,12 +303,47 @@ func (tp *TransactionProcessor) processDividend(processRes *ProcessResult, ptr *
 		}
 
 		// item totals
-		processItem.TaxPaid += taxPaid
-		processItem.TaxPaidInPrimaryCurrency += taxPaidInPrimary
+		processItem.DividendTaxPaid += taxPaid
+		processItem.DividendTaxPaidInPrimaryCurrency += taxPaidInPrimary
 
 		// country totals
-		processRes.Countries[processItem.Country.Name].TotalTaxPaidInPrimaryCurrency += taxPaidInPrimary
+		processRes.Countries[processItem.Country.Name].TotalDividendTaxPaidInPrimaryCurrency += taxPaidInPrimary
 	}
+
+	return nil
+}
+
+// processCashAndCapital processes capital returns, merger cash (positive) and fees (negative)
+func (tp *TransactionProcessor) processCashAndCapital(processRes *ProcessResult, ptr *processorTransaction) error {
+	tr := ptr.Transaction
+
+	expenses := 0.0
+	revenues := 0.0
+
+	if tr.NetTotal >= 0 {
+		revenues += tr.NetTotal
+	} else {
+		expenses += -tr.NetTotal
+	}
+
+	expensesInPrimary, err := tp.currencyCache.Convert(expenses, tr.Currency, tp.PrimaryCurrency, tr.Time)
+	if err != nil {
+		return err
+	}
+
+	revenuesInPrimary, err := tp.currencyCache.Convert(revenues, tr.Currency, tp.PrimaryCurrency, tr.Time)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("* %s - Cash/CapitalReturn/Fee - %s\n", tr.Item, tr.Reference)
+	fmt.Printf("  revenues: %.2f %s\n", revenues, tr.Currency)
+	fmt.Printf("  expenses: %.2f %s\n\n", expenses, tr.Currency)
+
+	// add to totals
+	processRes.TotalExpensesInPrimaryCurrency += expensesInPrimary
+	processRes.TotalRevenuesInPrimaryCurrency += revenuesInPrimary
+	processRes.TotalGainLossByCurrency[tr.Currency] += revenues - expenses
 
 	return nil
 }
@@ -331,6 +381,13 @@ func (tp *TransactionProcessor) Process() (*ProcessResult, error) {
 			err = tp.processSell(processRes, ptr)
 		case importers.TTDividend:
 			err = tp.processDividend(processRes, ptr)
+		case importers.TTMergerCash, importers.TTFee, importers.TTReturnOfCapital:
+			err = tp.processCashAndCapital(processRes, ptr)
+		case importers.TTBuy, importers.TTDeposit, importers.TTWithdrawal:
+			break // do nothing with these
+		default:
+			return nil, fmt.Errorf("process: not a known way to handle this transaction: %s",
+				ptr.Transaction.String())
 		}
 
 		if err != nil {
@@ -342,6 +399,7 @@ func (tp *TransactionProcessor) Process() (*ProcessResult, error) {
 }
 
 // PrintTransactions prints all transactions
+// (from the most recent, without diplicates)
 func (tp *TransactionProcessor) PrintTransactions() error {
 	for _, ptr := range tp.Transactions {
 		t := ptr.Transaction

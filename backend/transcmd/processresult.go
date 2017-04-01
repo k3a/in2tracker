@@ -5,27 +5,40 @@ import (
 	"k3a.me/money/backend/model"
 )
 
+// ProcessItem holds processed result for a single item (like a single stock)
+// It can be result of many processed transactions
 type ProcessItem struct {
 	Item    *model.Item
 	Country *model.Country
 
-	Currency                 currency.Currency
-	TaxPaid                  float64 // in company-local currency
-	TaxPaidInPrimaryCurrency float64
-	RevenueInPrimaryCurrency float64
+	// item currency
+	Currency currency.Currency
+	// tax paid in item currency
+	DividendTaxPaid                  float64
+	DividendTaxPaidInPrimaryCurrency float64
+	DividendIncomeInPrimaryCurrency  float64
 }
 
+// ProcessCountry holds processed result for a single country.
+// It is used to store country-data like income per country
 type ProcessCountry struct {
-	Items                          []*ProcessItem
-	TotalRevenuesInPrimaryCurrency float64
-	TotalTaxPaidInPrimaryCurrency  float64
+	// items belonging to the country
+	Items                                 []*ProcessItem
+	TotalDividendIncomeInPrimaryCurrency  float64
+	TotalDividendTaxPaidInPrimaryCurrency float64
 }
 
+// ProcessResult holds the complete result of process operation
 type ProcessResult struct {
-	PrimaryCurrency                currency.Currency
-	Countries                      map[string]*ProcessCountry
-	TotalGainLossByCurrency        map[currency.Currency]float64
+	// primary currency used during processing (must be set in the constructor only)
+	PrimaryCurrency currency.Currency
+	// results split by individual countries
+	Countries map[string]*ProcessCountry
+	// total net gain/loss (income) by currency
+	TotalGainLossByCurrency map[currency.Currency]float64
+	// total revenues from stock/item sells (excl. any fees)
 	TotalRevenuesInPrimaryCurrency float64
+	// total expenses from stock/item purchases and sells (costs + fees)
 	TotalExpensesInPrimaryCurrency float64
 }
 

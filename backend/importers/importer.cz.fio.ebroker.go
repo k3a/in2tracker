@@ -206,7 +206,8 @@ func (imp *CZFioImporter) Import(reader io.Reader) ([]*Transaction, error) {
 			newTransaction.FeeCurrency = currency.Invalid
 		} else if strings.Contains(newTransaction.Reference, "Return of Principal") {
 			newTransaction.Type = TTReturnOfCapital
-		} else if strings.Contains(newTransaction.Reference, "Merger") {
+		} else if newTransaction.Type == TTInvalid &&
+			strings.Contains(newTransaction.Reference, "Merger") {
 			newTransaction.Type = TTMergerCash
 		}
 		// still invalid? signal failture!

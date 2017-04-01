@@ -137,5 +137,5 @@ func (p *QuandlProvider) GetItemInfo(market string, item string) (*ItemInfo, err
 }
 
 func init() {
-	RegisterProvider(NewQuandlProvider("QUANDL_SECRET" /*SECRET*/))
+	RegisterProvider(NewQuandlProvider("QUANDL_SECRET" /*SECRET: change to your Quandl secret token*/))
 }

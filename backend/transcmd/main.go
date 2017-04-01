@@ -62,14 +62,14 @@ func main() {
 			// for each company from the country ...
 			for _, it := range pc.Items {
 				fmt.Printf("  * COMPANY %s - %s - %s\n", it.Item.Code, it.Item.Name, it.Item.Address)
-				fmt.Printf("    * Dividend Revenue: %.2f %s\n", it.RevenueInPrimaryCurrency, proc.PrimaryCurrency)
-				fmt.Printf("    * Dividend Tax Paid: %.2f %s\n", it.TaxPaid, it.Currency)
-				fmt.Printf("    * Dividend Tax Paid: %.2f %s\n", it.TaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
+				fmt.Printf("    * Dividend Income: %.2f %s\n", it.DividendIncomeInPrimaryCurrency, proc.PrimaryCurrency)
+				fmt.Printf("    * Dividend Tax Paid (local currency): %.2f %s\n", it.DividendTaxPaid, it.Currency)
+				fmt.Printf("    * Dividend Tax Paid (in primary): %.2f %s\n", it.DividendTaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
 			}
 			fmt.Printf("  * Total Dividend Tax Paid in %s: %.2f %s\n",
-				countryName, pc.TotalTaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
+				countryName, pc.TotalDividendTaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
 			fmt.Printf("  * Total Dividend Revenues in %s: %.2f %s\n",
-				countryName, pc.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
+				countryName, pc.TotalDividendIncomeInPrimaryCurrency, proc.PrimaryCurrency)
 		}
 
 		// print exp/rev in primary currency
@@ -77,11 +77,11 @@ func main() {
 		fmt.Printf("  * Expenses: %.2f %s\n", res.TotalExpensesInPrimaryCurrency, proc.PrimaryCurrency)
 		fmt.Printf("  * Revenues: %.2f %s\n", res.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
 
-		totalDividendRevenuePrimary := 0.0
+		totalDividendIncomePrimary := 0.0
 		for _, pc := range res.Countries {
-			totalDividendRevenuePrimary += pc.TotalRevenuesInPrimaryCurrency
+			totalDividendIncomePrimary += pc.TotalDividendIncomeInPrimaryCurrency
 		}
-		fmt.Printf("\nTOTAL DIVIDEND REVENUE IN %s: %.2f\n", proc.PrimaryCurrency, totalDividendRevenuePrimary)
+		fmt.Printf("\nTOTAL DIVIDEND INCOME IN %s: %.2f\n", proc.PrimaryCurrency, totalDividendIncomePrimary)
 
 		// print net total gain/loss in individual currencies
 		currencyCache := NewCurrencyCache(storePtr)
