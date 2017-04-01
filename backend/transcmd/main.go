@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/alexflint/go-arg"
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/importers"
-	"k3a.me/money/backend/store"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/importers"
+	"github.com/k3a/in2tracker/backend/store"
 )
 
 func main() {

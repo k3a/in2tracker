@@ -7,11 +7,11 @@ import (
 	"sort"
 	"time"
 
-	"k3a.me/money/backend/companydata"
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/importers"
-	"k3a.me/money/backend/model"
-	"k3a.me/money/backend/store"
+	"github.com/k3a/in2tracker/backend/companydata"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/importers"
+	"github.com/k3a/in2tracker/backend/model"
+	"github.com/k3a/in2tracker/backend/store"
 )
 
 type processorTransaction struct {

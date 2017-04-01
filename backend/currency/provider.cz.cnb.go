@@ -7,7 +7,7 @@ import (
 
 	"strings"
 
-	"k3a.me/money/backend/utils"
+	"github.com/k3a/in2tracker/backend/utils"
 )
 
 // CZCNB receives data from

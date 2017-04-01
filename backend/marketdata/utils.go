@@ -3,7 +3,7 @@ package marketdata
 import (
 	"strings"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 // StockMarketCurrency returns currency used in the stock market

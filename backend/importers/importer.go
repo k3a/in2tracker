@@ -7,8 +7,8 @@ import (
 	"io"
 	"time"
 
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/utils"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/utils"
 )
 
 // TransactionType holds a type of transaction

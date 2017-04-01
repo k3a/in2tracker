@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/store"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/store"
 )
 
 //TODO: move to ./currency module with optional interface to store for caching

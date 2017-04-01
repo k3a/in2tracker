@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"k3a.me/money/backend/model"
+	"github.com/k3a/in2tracker/backend/model"
 )
 
 type yahooNumber struct {

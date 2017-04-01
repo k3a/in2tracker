@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"k3a.me/money/backend/store"
+	"github.com/k3a/in2tracker/backend/store"
 	//"ndemiccreations.com/rest"
 	_ "github.com/mattn/go-sqlite3" //sqlite driver
 )

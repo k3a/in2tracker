@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/russross/meddler"
-	"k3a.me/money/backend/model"
+	"github.com/k3a/in2tracker/backend/model"
 )
 
 const countriesTable = "countries"

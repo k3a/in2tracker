@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 func TestQuandlProvider(t *testing.T) {

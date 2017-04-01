@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 func e(format string, args ...interface{}) error {

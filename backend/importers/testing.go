@@ -5,7 +5,7 @@ import (
 
 	"math"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 /* BASIC TRANSACTION LIST RULES

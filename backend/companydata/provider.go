@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"k3a.me/money/backend/model"
+	"github.com/k3a/in2tracker/backend/model"
 )
 
 func e(format string, args ...interface{}) error {

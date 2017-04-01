@@ -9,7 +9,7 @@ import (
 
 	"encoding/json"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 // QuandlProvider provides data from quandl.com

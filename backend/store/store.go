@@ -10,7 +10,7 @@ import (
 
 	"github.com/rubenv/sql-migrate"
 	"github.com/russross/meddler"
-	"k3a.me/money/backend/store/ddl"
+	"github.com/k3a/in2tracker/backend/store/ddl"
 
 	// drivers
 	_ "github.com/go-sql-driver/mysql"

@@ -5,7 +5,7 @@ import (
 
 	"time"
 
-	"k3a.me/money/backend/currency"
+	"github.com/k3a/in2tracker/backend/currency"
 )
 
 func TestGoogleStockFetchRealtime(t *testing.T) {

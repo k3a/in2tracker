@@ -1,8 +1,8 @@
 package main
 
 import (
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/model"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/model"
 )
 
 // ProcessItem holds processed result for a single item (like a single stock)

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/russross/meddler"
-	"k3a.me/money/backend/currency"
-	"k3a.me/money/backend/model"
+	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/k3a/in2tracker/backend/model"
 )
 
 const currenciesTable = "currencies"
