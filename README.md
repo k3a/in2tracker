@@ -1,7 +1,7 @@
 [![GoDoc](https://godoc.org/github.com/k3a/in2tracker?status.svg)](https://godoc.org/github.com/k3a/in2tracker)
 [![Build Status](https://travis-ci.org/k3a/in2tracker.svg?branch=master)](https://travis-ci.org/k3a/in2tracker)
 [![Coverage Status](https://coveralls.io/repos/k3a/in2tracker/badge.svg?branch=master&service=github)](https://coveralls.io/github/k3a/go-arg?branch=master)
-[![Report Card](https://goreportcard.com/badge/github.com/k3a/in2tracker)](https://goreportcard.com/badge/github.com/k3a/in2tracker)
+[![Report Card](https://goreportcard.com/badge/github.com/k3a/in2tracker)](https://goreportcard.com/report/github.com/k3a/in2tracker)
 
 # In2Tracker - Intelligent Investment Tracker
 
