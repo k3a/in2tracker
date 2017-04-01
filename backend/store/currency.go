@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/russross/meddler"
@@ -24,10 +23,9 @@ func (s *Store) GetCurrency(code currency.Currency) (*model.Currency, error) {
 
 // GetOrCreateCurrency returns currency detail or creates a new currency
 // Nil is returned on error.
-func (s *Store) GetOrCreateCurrency(code currency.Currency) *model.Currency {
-	ret, err := s.GetCurrency(code)
-	if err == nil {
-		return ret
+func (s *Store) GetOrCreateCurrency(code currency.Currency) (*model.Currency, error) {
+	if ret, err := s.GetCurrency(code); err == nil {
+		return ret, nil
 	}
 
 	def := &model.Currency{
@@ -35,12 +33,7 @@ func (s *Store) GetOrCreateCurrency(code currency.Currency) *model.Currency {
 		Name: code.Name(),
 	}
 
-	err = meddler.Insert(s.db, currenciesTable, def)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return def
+	return def, meddler.Insert(s.db, currenciesTable, def)
 }
 
 // GetCurrencyMultiplier finds multiplier for converting "from" currency to "to" currency.
@@ -69,14 +62,14 @@ func (s *Store) GetCurrencyMultiplier(date time.Time, from currency.Currency, to
 
 // StoreCurrencyMultiplier stores multiplier for the specified date
 func (s *Store) StoreCurrencyMultiplier(date time.Time, from currency.Currency, to currency.Currency, mult float64) error {
-	src := s.GetOrCreateCurrency(from)
-	if src == nil {
-		return e("unable to create currency")
+	src, err := s.GetOrCreateCurrency(from)
+	if err != nil {
+		return err
 	}
 
-	dst := s.GetOrCreateCurrency(to)
-	if dst == nil {
-		return e("unable to create currency")
+	dst, err := s.GetOrCreateCurrency(to)
+	if err != nil {
+		return err
 	}
 
 	return meddler.Save(s.db, currencyPairsTable, &model.CurrencyPair{

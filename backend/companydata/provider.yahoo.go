@@ -11,9 +11,40 @@ import (
 	"k3a.me/money/backend/model"
 )
 
+type yahooNumber struct {
+	Raw float64 `json:"raw"`
+	Fmt string  `json:"fmt"`
+}
+
 type yahooData struct {
 	QuoteSummary struct {
 		Result []struct {
+			Price struct {
+				ShortName    string `json:"shortName"`
+				LongName     string `json:"longName"`
+				Currency     string `json:"currency"`
+				Exchange     string `json:"exchange"`
+				ExchangeName string `json:"exchangeName"`
+
+				PreMarketTime          int         `json:"preMarketTime"`
+				PreMarketPrice         yahooNumber `json:"preMarketPrice"`
+				PreMarketChange        yahooNumber `json:"preMarketChange"`
+				PreMarketChangePercent yahooNumber `json:"preMarketChangePercent"`
+
+				PostMarketTime          int         `json:"postMarketTime"`
+				PostMarketPrice         yahooNumber `json:"postMarketPrice"`
+				PostMarketChange        yahooNumber `json:"postMarketChange"`
+				PostMarketChangePercent yahooNumber `json:"postMarketChangePercent"`
+
+				RegularMarketTime          int         `json:"regularMarketTime"`
+				RegularMarketPrice         yahooNumber `json:"regularMarketPrice"`
+				RegularMarketChange        yahooNumber `json:"regularMarketChange"`
+				RegularMarketChangePercent yahooNumber `json:"regularMarketChangePercent"`
+
+				RegularMarketDayLow  yahooNumber `json:"regularMarketDayLow"`
+				RegularMarketDayHigh yahooNumber `json:"regularMarketDayHigh"`
+			} `json:"price"`
+
 			AssetProfile struct {
 				Address1            string `json:"address1"`
 				City                string `json:"city"`
@@ -61,6 +92,9 @@ func (yd *yahooData) GetIndustry() string {
 func (yd *yahooData) GetSector() string {
 	return yd.QuoteSummary.Result[0].AssetProfile.Sector
 }
+func (yd *yahooData) GetLongName() string {
+	return yd.QuoteSummary.Result[0].Price.LongName
+}
 
 // YahooProvider is yahoo.com provider
 type YahooProvider struct {
@@ -70,12 +104,12 @@ type YahooProvider struct {
 // GetCompanyData return info about the company
 func (yp *YahooProvider) GetCompanyData(ticker string) (CompanyData, error) {
 	u := fmt.Sprintf("https://query1.finance.yahoo.com/v10/finance/quoteSummary/%s"+
-		"?formatted=true&lang=en-US&region=US&modules=assetProfile&corsDomain=finance.yahoo.com",
+		"?formatted=true&lang=en-US&region=US&modules=price,assetProfile&corsDomain=finance.yahoo.com",
 		url.QueryEscape(ticker))
 
 	resp, err := yp.httpClient.Get(u)
 	if err != nil {
-		log.Printf("ERR %s\n", err)
+		log.Printf("ERR for %s: %s\n", ticker, err)
 		return nil, ErrNotAvailable
 	}
 	defer resp.Body.Close()
@@ -83,6 +117,7 @@ func (yp *YahooProvider) GetCompanyData(ticker string) (CompanyData, error) {
 	var respObj yahooData
 	err = json.NewDecoder(resp.Body).Decode(&respObj)
 	if err != nil {
+		log.Printf("ERR for %s: %s\n", ticker, err)
 		return nil, ErrBadFormat
 	}
 

@@ -1,13 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
 	"sort"
 	"time"
 
+	"k3a.me/money/backend/companydata"
 	"k3a.me/money/backend/currency"
 	"k3a.me/money/backend/importers"
+	"k3a.me/money/backend/model"
 	"k3a.me/money/backend/store"
 )
 
@@ -23,9 +26,9 @@ type transactionWithAmount struct {
 }
 
 type TransactionProcessor struct {
+	store           *store.Store
 	currencyCache   *CurrencyCache
 	Transactions    []*processorTransaction
-	Store           *store.Store
 	PrimaryCurrency currency.Currency
 }
 
@@ -55,9 +58,9 @@ func NewTransactionProcessor(trs []*importers.Transaction, storePtr *store.Store
 	})
 
 	return &TransactionProcessor{
+		storePtr,
 		NewCurrencyCache(storePtr),
 		trsToProcess,
-		storePtr,
 		primaryCurrency,
 	}
 }
@@ -127,6 +130,174 @@ func (tp *TransactionProcessor) fixMissingCurrencies() {
 	}
 }
 
+func (tp *TransactionProcessor) processSell(processRes *ProcessResult, ptr *processorTransaction) error {
+	sellTr := ptr.Transaction
+
+	// sell gain in primary currency
+	sellFee, err := tp.currencyCache.Convert(
+		sellTr.Fee, sellTr.FeeCurrency, sellTr.Currency, sellTr.Time)
+	if err != nil {
+		return err
+	}
+	sellFeePrimary, err := tp.currencyCache.Convert(
+		sellTr.Fee, sellTr.FeeCurrency, processRes.PrimaryCurrency, sellTr.Time)
+	if err != nil {
+		return err
+	}
+	sellRevenueInPrimary, err := tp.currencyCache.Convert(
+		sellTr.NetTotal+sellFee, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
+	if err != nil {
+		return err
+	}
+
+	// update totals by this sell
+	processRes.TotalRevenuesInPrimaryCurrency += sellRevenueInPrimary
+	processRes.TotalExpensesInPrimaryCurrency += sellFeePrimary
+
+	// print
+	fmt.Printf("* %s - SOLD %.2f items and got %.2f net on %s\n",
+		sellTr.Item, sellTr.Quantity, sellTr.NetTotal, sellTr.Time)
+
+	// find relevant buys
+	buys, remain := tp.findOldestAvailableBuys(sellTr.Item, sellTr.Quantity, sellTr.Time)
+	if remain > 0 {
+		fmt.Printf("!!! WARN: Cannot find a purchase of %.2f items of %s sold on %s\n",
+			remain, ptr.Transaction.Item, ptr.Transaction.Time)
+	}
+
+	// sum buy cost from buys
+	buyExpenses := 0.0
+	for _, buy := range buys {
+		buyTr := buy.Transaction.Transaction
+
+		// item cost
+		buyExpenses += buy.Amount * buyTr.Price
+
+		// cost fee fraction converted to transaction currency
+		fee, err := tp.currencyCache.Convert(buyTr.Fee/buyTr.Quantity*buy.Amount,
+			buyTr.FeeCurrency, buyTr.Currency, buyTr.Time)
+		if err != nil {
+			return err
+		}
+		buyExpenses += fee
+
+		// remove used number of items bought
+		buy.Transaction.RemainingBuys -= buy.Amount
+
+		fmt.Printf("  bought %.2f items on %s (%s ago) for %.2f net\n",
+			buy.Amount, buyTr.Time, TimeDifference(buyTr.Time, sellTr.Time), buyExpenses)
+	}
+	ptr.BuyCost = buyExpenses
+
+	// buy expenses in primary
+	buyExpensesInPrimary, err := tp.currencyCache.Convert(
+		ptr.BuyCost, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
+	if err != nil {
+		return err
+	}
+	processRes.TotalExpensesInPrimaryCurrency += buyExpensesInPrimary
+
+	thisGainLoss := sellTr.NetTotal - ptr.BuyCost
+	fmt.Printf("  => gainLoss: %.2f %s \n\n", thisGainLoss, sellTr.Currency)
+
+	// add to total net gain/loss for the currency
+	prevTotalGainLoss, _ := processRes.TotalGainLossByCurrency[sellTr.Currency]
+	prevTotalGainLoss += thisGainLoss
+	processRes.TotalGainLossByCurrency[sellTr.Currency] = prevTotalGainLoss
+
+	return nil
+}
+
+func (tp *TransactionProcessor) processDividend(processRes *ProcessResult, ptr *processorTransaction) error {
+	tr := ptr.Transaction
+
+	processItem := processRes.GetItem(tr.Item)
+	if processItem == nil {
+		// market
+		//market := (*model.Market)(nil) //TODO: identify market somehow
+
+		// item and country info
+		var country *model.Country
+		item, err := tp.store.GetItemByCode(tr.Item)
+		if err == nil {
+			// get country
+			country, err = tp.store.GetCountry(item.CountryID)
+			if err != nil {
+				return err
+			}
+		} else if err == sql.ErrNoRows {
+			// try fetch company data
+			companyData, err := companydata.GetCompanyData(tr.Item)
+			if err != nil {
+				return fmt.Errorf("unable to get company data for %s: %s", tr.Item, err)
+			}
+
+			// country
+			country, err = tp.store.GetOrCreateCountry(companyData.GetAddress().Country)
+			if err != nil {
+				return err
+			}
+
+			// currency
+			currency, err := tp.store.GetOrCreateCurrency(tr.Currency)
+			if err != nil {
+				return err
+			}
+
+			// create item info
+			item = &model.Item{
+				MarketID:   0, // TODO: market ID
+				CountryID:  country.ID,
+				CurrencyID: currency.ID,
+				Code:       tr.Item,
+				Name:       companyData.GetLongName(),
+				Address:    companyData.GetAddress().String(),
+			}
+			if err := tp.store.CreateItem(item); err != nil {
+				return err
+			}
+		} else if err != nil {
+			return err
+		}
+
+		processItem = processRes.AddItem(item, country)
+	}
+
+	processItem.Currency = tr.Currency
+
+	if tr.NetTotal >= 0 {
+		// dividend revenue in primary
+		revenueInPrimary, err := tp.currencyCache.Convert(tr.NetTotal, tr.Currency, tp.PrimaryCurrency, tr.Time)
+		if err != nil {
+			return err
+		}
+
+		// item totals
+		processItem.RevenueInPrimaryCurrency += revenueInPrimary
+
+		// country totals
+		processRes.Countries[processItem.Country.Name].TotalRevenuesInPrimaryCurrency += revenueInPrimary
+	} else {
+		// tax paid
+		taxPaid := -tr.NetTotal
+
+		// tax paid in primary
+		taxPaidInPrimary, err := tp.currencyCache.Convert(taxPaid, tr.Currency, tp.PrimaryCurrency, tr.Time)
+		if err != nil {
+			return err
+		}
+
+		// item totals
+		processItem.TaxPaid += taxPaid
+		processItem.TaxPaidInPrimaryCurrency += taxPaidInPrimary
+
+		// country totals
+		processRes.Countries[processItem.Country.Name].TotalTaxPaidInPrimaryCurrency += taxPaidInPrimary
+	}
+
+	return nil
+}
+
 // Process processes sells to find gain and loss
 func (tp *TransactionProcessor) Process() (*ProcessResult, error) {
 	tp.fixMissingCurrencies()
@@ -148,72 +319,22 @@ func (tp *TransactionProcessor) Process() (*ProcessResult, error) {
 	for it := len(tp.Transactions) - 1; it >= 0; it-- {
 		ptr := tp.Transactions[it]
 
-		// skip transactions old too much
+		// skip transactions which are too old
 		if ptr.Transaction.Time.Before(firstDayOfPreviousYear) {
 			continue
 		}
 
-		if ptr.Transaction.Type == importers.TTSell {
-			sellTr := ptr.Transaction
+		var err error
 
-			// sell gain in primary currency
-			gainInPrimary, err := tp.currencyCache.Convert(
-				sellTr.NetTotal, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
-			if err != nil {
-				return nil, err
-			}
-			processRes.TotalRevenuesInPrimaryCurrency += gainInPrimary
+		switch ptr.Transaction.Type {
+		case importers.TTSell:
+			err = tp.processSell(processRes, ptr)
+		case importers.TTDividend:
+			err = tp.processDividend(processRes, ptr)
+		}
 
-			// print
-			fmt.Printf("* %s - SOLD %.2f items for %.2f on %s\n", sellTr.Item, sellTr.Quantity, sellTr.NetTotal, sellTr.Time)
-
-			// find relevant buys
-			buys, remain := tp.findOldestAvailableBuys(sellTr.Item, sellTr.Quantity, sellTr.Time)
-			if remain > 0 {
-				fmt.Printf("!!! WARN: Cannot find a purchase of %.2f items of %s sold on %s\n",
-					remain, ptr.Transaction.Item, ptr.Transaction.Time)
-			}
-
-			// sum buy cost from buys
-			buyCost := 0.0
-			for _, buy := range buys {
-				buyTr := buy.Transaction.Transaction
-
-				// item cost
-				buyCost += buy.Amount * buyTr.Price
-
-				// cost fee fraction converted to transaction currency
-				fee, err := tp.currencyCache.Convert(buyTr.Fee/buyTr.Quantity*buy.Amount,
-					buyTr.FeeCurrency, buyTr.Currency, buyTr.Time)
-				if err != nil {
-					return nil, err
-				}
-				buyCost += fee
-
-				// remove used number of items bought
-				buy.Transaction.RemainingBuys -= buy.Amount
-
-				fmt.Printf("  bought %.2f items on %s (%s ago) for %.2f %s\n",
-					buy.Amount, buyTr.Time, TimeDifference(buyTr.Time, sellTr.Time),
-					buyCost, buyTr.Currency)
-			}
-			ptr.BuyCost = buyCost
-
-			// buy cost in primary
-			buyCostInPrimary, err := tp.currencyCache.Convert(
-				ptr.BuyCost, sellTr.Currency, processRes.PrimaryCurrency, sellTr.Time)
-			if err != nil {
-				return nil, err
-			}
-			processRes.TotalExpensesInPrimaryCurrency += buyCostInPrimary
-
-			thisGainLoss := sellTr.NetTotal - ptr.BuyCost
-			fmt.Printf("  => gainLoss: %.2f %s \n\n", thisGainLoss, sellTr.Currency)
-
-			// add to total gain/loss for the currency
-			prevTotalGainLoss, _ := processRes.TotalGainLossByCurrency[sellTr.Currency]
-			prevTotalGainLoss += thisGainLoss
-			processRes.TotalGainLossByCurrency[sellTr.Currency] = prevTotalGainLoss
+		if err != nil {
+			return nil, err
 		}
 	}
 

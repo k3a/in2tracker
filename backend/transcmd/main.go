@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/alexflint/go-arg"
 	"k3a.me/money/backend/currency"
@@ -55,15 +56,47 @@ func main() {
 			panic(err)
 		}
 
-		// print exp/rev in primary currency
-		fmt.Printf("\nTOTAL IN %s:\n", proc.PrimaryCurrency)
-		fmt.Printf("* Expenses: %.2f %s\n", res.TotalExpensesInPrimaryCurrency, proc.PrimaryCurrency)
-		fmt.Printf("* Revenues: %.2f %s\n", res.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
-
-		// print totals
-		fmt.Printf("\nTOTAL GAIN/LOSS IN ORIGINAL CURRENCIES:\n")
-		for c, t := range res.TotalGainLossByCurrency {
-			fmt.Printf("* %.2f %s\n", t, c)
+		// for each country..
+		for countryName, pc := range res.Countries {
+			fmt.Printf("\nCOUNTRY %s\n", countryName)
+			// for each company from the country ...
+			for _, it := range pc.Items {
+				fmt.Printf("  * COMPANY %s - %s - %s\n", it.Item.Code, it.Item.Name, it.Item.Address)
+				fmt.Printf("    * Dividend Revenue: %.2f %s\n", it.RevenueInPrimaryCurrency, proc.PrimaryCurrency)
+				fmt.Printf("    * Dividend Tax Paid: %.2f %s\n", it.TaxPaid, it.Currency)
+				fmt.Printf("    * Dividend Tax Paid: %.2f %s\n", it.TaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
+			}
+			fmt.Printf("  * Total Dividend Tax Paid in %s: %.2f %s\n",
+				countryName, pc.TotalTaxPaidInPrimaryCurrency, proc.PrimaryCurrency)
+			fmt.Printf("  * Total Dividend Revenues in %s: %.2f %s\n",
+				countryName, pc.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
 		}
+
+		// print exp/rev in primary currency
+		fmt.Printf("\nTOTAL IN %s (excl. dividends):\n", proc.PrimaryCurrency)
+		fmt.Printf("  * Expenses: %.2f %s\n", res.TotalExpensesInPrimaryCurrency, proc.PrimaryCurrency)
+		fmt.Printf("  * Revenues: %.2f %s\n", res.TotalRevenuesInPrimaryCurrency, proc.PrimaryCurrency)
+
+		totalDividendRevenuePrimary := 0.0
+		for _, pc := range res.Countries {
+			totalDividendRevenuePrimary += pc.TotalRevenuesInPrimaryCurrency
+		}
+		fmt.Printf("\nTOTAL DIVIDEND REVENUE IN %s: %.2f\n", proc.PrimaryCurrency, totalDividendRevenuePrimary)
+
+		// print net total gain/loss in individual currencies
+		currencyCache := NewCurrencyCache(storePtr)
+		totalGainLossPrimary := 0.0
+		fmt.Printf("\nTOTAL NET GAIN/LOSS IN ORIGINAL CURRENCIES (excl. dividends):\n")
+		for currency, total := range res.TotalGainLossByCurrency {
+			totalInPrimary, err := currencyCache.Convert(total, currency, proc.PrimaryCurrency, time.Now())
+			if err != nil {
+				fmt.Printf("  * %.2f %s\n", total, currency)
+			} else {
+				totalGainLossPrimary += totalInPrimary
+				fmt.Printf("  * %.2f %s (= %.2f %s today)\n",
+					total, currency, totalInPrimary, proc.PrimaryCurrency)
+			}
+		}
+		fmt.Printf("  => SUM IN %s TODAY: %.2f\n", proc.PrimaryCurrency, totalGainLossPrimary)
 	}
 }

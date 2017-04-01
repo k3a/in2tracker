@@ -2,6 +2,9 @@ package marketdata
 
 import "time"
 
+//TODO: consider merging companydata with marketdata provider
+// that way we could also find to which market an item belongs
+
 var pairToProvider = make(map[string]Provider)
 
 func mipair(market string, item string) string {

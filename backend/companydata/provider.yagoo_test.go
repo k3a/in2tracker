@@ -13,4 +13,5 @@ func TestYahoo(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Equal(t, "1 Infinite Loop, Cupertino, CA 95014, United States", cd.GetAddress().String())
+	require.Equal(t, "Apple Inc.", cd.GetLongName())
 }

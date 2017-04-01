@@ -23,6 +23,7 @@ type CompanyData interface {
 	GetBusinessSummary() string
 	GetIndustry() string
 	GetSector() string
+	GetLongName() string
 }
 
 // Provider is common interface for all company data providers

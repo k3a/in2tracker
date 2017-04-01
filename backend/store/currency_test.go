@@ -19,7 +19,8 @@ func TestCurrency(t *testing.T) {
 	require.Error(t, err)
 
 	// create a new currency
-	createdCurr := s.GetOrCreateCurrency(currency.USD)
+	createdCurr, err := s.GetOrCreateCurrency(currency.USD)
+	require.Nil(t, err)
 	require.NotNil(t, createdCurr)
 	require.Equal(t, currency.USD.Name(), createdCurr.Name)
 
