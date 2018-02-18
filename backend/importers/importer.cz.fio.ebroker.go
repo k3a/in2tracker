@@ -9,9 +9,9 @@ import (
 
 	"time"
 
-	"golang.org/x/text/encoding/charmap"
 	"github.com/k3a/in2tracker/backend/currency"
 	"github.com/k3a/in2tracker/backend/utils"
+	"golang.org/x/text/encoding/charmap"
 )
 
 type CZFioImporter struct {
@@ -187,7 +187,10 @@ func (imp *CZFioImporter) Import(reader io.Reader) ([]*Transaction, error) {
 		}
 		if newTransaction.Type == TTInvalid && len(trDir) == 0 {
 			// type still not set and no direction specified
-			if reDividendText.MatchString(newTransaction.Reference) {
+			if strings.Contains(newTransaction.Reference, "CAPITAL GAIN") {
+				// capital gain? Like a dividend? //FIXME
+				newTransaction.Type = TTDividend
+			} else if reDividendText.MatchString(newTransaction.Reference) {
 				// text matches dividend
 				newTransaction.Type = TTDividend
 			} else if reFeeText.MatchString(newTransaction.Reference) {
@@ -198,7 +201,7 @@ func (imp *CZFioImporter) Import(reader io.Reader) ([]*Transaction, error) {
 				newTransaction.Fee = -newTransaction.NetTotal
 			}
 		}
-		if strings.Contains(newTransaction.Reference, "Spin-off (") {
+		if strings.Contains(newTransaction.Reference, "Spin-off") {
 			newTransaction.Type = TTBuy
 			newTransaction.Price = 0
 			newTransaction.NetTotal = 0

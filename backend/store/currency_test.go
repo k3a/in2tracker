@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/k3a/in2tracker/backend/currency"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCurrency(t *testing.T) {
