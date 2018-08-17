@@ -178,7 +178,7 @@ func (yp *YahooProvider) GetCompanyData(market *marketdata.Market, ticker string
 
 	req, err := utils.NewBrowserRequest("GET", u, nil)
 	if err != nil {
-		log.Warnf("yahoo: problem creating request: %v\n", ticker, err)
+		log.Warnf("yahoo: problem creating request for %s: %v\n", ticker, err)
 		return nil, ErrNotAvailable
 	}
 
