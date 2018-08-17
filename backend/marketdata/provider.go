@@ -15,12 +15,11 @@ func e(format string, args ...interface{}) error {
 // Errors
 var (
 	ErrNotAvailable = e("data for the selected item and time not available")
-	ErrBadFormat    = e("provider received wrongly formatted data")
-	ErrOldData      = e("provider received old data")
 )
 
 // MarketData specifies market info for a particular item and time
 type MarketData struct {
+	Time      time.Time
 	LastTrade float64 // last trade price
 	Currency  currency.Currency
 }
@@ -49,23 +48,23 @@ type Provider interface {
 	// Supports returns true if the item-market pair is supported by the provider.
 	// Should return fast and not make any http requests (except for the first time it is called)
 	// Parameter market can be empty.
-	Supports(market string, item string) bool
+	Supports(market *Market, item string) bool
 	// GetMarketData gets the market price at the specific time.
 	// market: market identifier (NASDAQ, CURRENCY)
 	// item: stock ticker or item identifier (APPLE, USDCZK)
-	GetMarketData(market string, item string, at time.Time) (*MarketData, error)
+	GetMarketData(market *Market, item string, at time.Time) (*MarketData, error)
 
 	// SupportsDateRange returns true if the provider supports returning data for date range
 	// and GetMarketDataForDateRange works
 	SupportsDateRange() bool
 	// GetPriceDateRange returns historical data from tfrom to tto dates.
-	GetMarketDataForDateRange(market string, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error)
+	GetMarketDataForDateRange(market *Market, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error)
 
 	// SupportsItemInfo returns true if the provider supports returning info about the item
 	SupportsItemInfo() bool
 	// GetItemInfo returns item information
 	// Parameter market can be empty.
-	GetItemInfo(market string, item string) (*ItemInfo, error)
+	GetItemInfo(market *Market, item string) (*ItemInfo, error)
 }
 
 // Providers holds all available currency rate providers

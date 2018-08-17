@@ -12,6 +12,10 @@ import (
 	"github.com/k3a/in2tracker/backend/currency"
 )
 
+func qandlErr(format string, args ...interface{}) error {
+	return fmt.Errorf("quandl: "+format, args...)
+}
+
 // QuandlProvider provides data from quandl.com
 type QuandlProvider struct {
 	httpCli http.Client
@@ -31,21 +35,16 @@ func (p *QuandlProvider) Name() string {
 // Supports returns true if the item-market pair is supported by the provider.
 // Should return fast and not make any http requests (except for the first time it is called)
 // Parameter market can be empty.
-func (p *QuandlProvider) Supports(market string, item string) bool {
+func (p *QuandlProvider) Supports(market *Market, item string) bool {
 	// no way to easily get the list of supported items, it seems :(
 	// More than 3000 companies means USD markets may be in..
-	switch market {
-	case "NASDAQ", "NYSE", "NYSEARCA", "NYSEMKT", "OTCBB", "OTCMKTS":
-		return true
-	default:
-		return false
-	}
+	return true
 }
 
 // GetMarketData gets the market price at the specific time.
 // market: market identifier (NASDAQ, CURRENCY)
 // item: stock ticker or item identifier (APPLE, USDCZK)
-func (p *QuandlProvider) GetMarketData(market string, item string, at time.Time) (*MarketData, error) {
+func (p *QuandlProvider) GetMarketData(market *Market, item string, at time.Time) (*MarketData, error) {
 	if time.Since(at) < 12 {
 		// we have EOD data only
 		return nil, ErrNotAvailable
@@ -72,7 +71,7 @@ func (p *QuandlProvider) SupportsDateRange() bool {
 }
 
 // GetMarketDataForDateRange returns historical data from tfrom to tto dates.
-func (p *QuandlProvider) GetMarketDataForDateRange(market string, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error) {
+func (p *QuandlProvider) GetMarketDataForDateRange(market *Market, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error) {
 
 	fromDateStr := url.QueryEscape(tfrom.Format("20060102"))
 	toDateStr := url.QueryEscape(tto.Format("20060102"))
@@ -96,7 +95,7 @@ func (p *QuandlProvider) GetMarketDataForDateRange(market string, item string, t
 
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		fmt.Println(err.Error())
-		return nil, ErrBadFormat
+		return nil, qandlErr("problem decoding range data: %v", err)
 	}
 
 	var outArr []*TimedMarketData
@@ -108,7 +107,7 @@ func (p *QuandlProvider) GetMarketDataForDateRange(market string, item string, t
 		t, err := time.Parse("2006-01-02", tp[0].(string)) // ok to be in UTC
 		if err != nil {
 			fmt.Println(err.Error())
-			return nil, ErrBadFormat
+			return nil, qandlErr("problem parsing date: %v", err)
 		}
 
 		outArr = append(outArr, &TimedMarketData{
@@ -132,10 +131,11 @@ func (p *QuandlProvider) SupportsItemInfo() bool {
 
 // GetItemInfo returns item information
 // Parameter market can be empty.
-func (p *QuandlProvider) GetItemInfo(market string, item string) (*ItemInfo, error) {
+func (p *QuandlProvider) GetItemInfo(market *Market, item string) (*ItemInfo, error) {
 	return nil, ErrNotAvailable
 }
 
 func init() {
-	RegisterProvider(NewQuandlProvider("QUANDL_SECRET" /*SECRET: change to your Quandl secret token*/))
+	// getting deprecated https://www.quandl.com/databases/WIKIP
+	RegisterProvider(NewQuandlProvider("xgafvQ_VZLuFbT7yDwxW" /*SECRET: */))
 }

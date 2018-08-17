@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/k3a/in2tracker/backend/marketdata"
 	"github.com/k3a/in2tracker/backend/model"
 )
 
@@ -24,11 +25,12 @@ type CompanyData interface {
 	GetIndustry() string
 	GetSector() string
 	GetLongName() string
+	GetMarkets() []*marketdata.Market
 }
 
 // Provider is common interface for all company data providers
 type Provider interface {
-	GetCompanyData(ticker string) (CompanyData, error)
+	GetCompanyData(mkt *marketdata.Market, ticker string) (CompanyData, error)
 }
 
 // Providers holds all available currency rate providers

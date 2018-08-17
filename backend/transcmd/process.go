@@ -242,7 +242,7 @@ func (tp *TransactionProcessor) processDividend(processRes *ProcessResult, ptr *
 			}
 		} else if err == sql.ErrNoRows {
 			// try fetch company data
-			companyData, err := companydata.GetCompanyData(tr.Item)
+			companyData, err := companydata.GetCompanyData(nil, tr.Item)
 			if err != nil {
 				return fmt.Errorf("unable to get company data for %s: %s", tr.Item, err)
 			}

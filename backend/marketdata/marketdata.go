@@ -1,30 +1,32 @@
 package marketdata
 
-import "time"
-
-//TODO: consider merging companydata with marketdata provider
-// that way we could also find to which market an item belongs
+import (
+	"strings"
+	"time"
+)
 
 var pairToProvider = make(map[string]Provider)
 
-func mipair(market string, item string) string {
-	return market + ":" + item
+func mipair(market *Market, item string) string {
+	return market.String() + ":" + item
 }
 
 // GetItemMarketData returns item price on the market at the specific time
-func GetItemMarketData(market string, item string, at time.Time) (*MarketData, error) {
-	pair := mipair(market, item)
+func GetItemMarketData(market *Market, item string, at time.Time) (*MarketData, error) {
+	for _, item := range strings.Split(item, ",") {
+		pair := mipair(market, item)
 
-	if provider, has := pairToProvider[pair]; has {
-		if md, err := provider.GetMarketData(market, item, at); err == nil {
-			return md, err
+		if provider, has := pairToProvider[pair]; has {
+			if md, err := provider.GetMarketData(market, item, at); err == nil {
+				return md, err
+			}
 		}
-	}
 
-	for _, provider := range Providers {
-		if md, err := provider.GetMarketData(market, item, at); err == nil {
-			pairToProvider[pair] = provider
-			return md, err
+		for _, provider := range Providers {
+			if md, err := provider.GetMarketData(market, item, at); err == nil {
+				pairToProvider[pair] = provider
+				return md, err
+			}
 		}
 	}
 
@@ -32,12 +34,12 @@ func GetItemMarketData(market string, item string, at time.Time) (*MarketData, e
 }
 
 // GetItemMarketDataNow returns item price on the market now
-func GetItemMarketDataNow(market string, item string) (*MarketData, error) {
+func GetItemMarketDataNow(market *Market, item string) (*MarketData, error) {
 	return GetItemMarketData(market, item, time.Now())
 }
 
 // GetItemMarketDataForDateRange returns list of item prices between specified tfrom and tto dates
-func GetItemMarketDataForDateRange(market string, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error) {
+func GetItemMarketDataForDateRange(market *Market, item string, tfrom time.Time, tto time.Time) ([]*TimedMarketData, error) {
 	pair := mipair(market, item)
 
 	if provider, has := pairToProvider[pair]; has && provider.SupportsDateRange() {
@@ -61,7 +63,7 @@ func GetItemMarketDataForDateRange(market string, item string, tfrom time.Time, 
 
 // GetItemInfo returns item info
 // Parameter market can be empty
-func GetItemInfo(market string, item string) (*ItemInfo, error) {
+func GetItemInfo(market *Market, item string) (*ItemInfo, error) {
 	for _, p := range Providers {
 		if !p.Supports(market, item) {
 			continue

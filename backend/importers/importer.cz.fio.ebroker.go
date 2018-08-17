@@ -188,7 +188,7 @@ func (imp *CZFioImporter) Import(reader io.Reader) ([]*Transaction, error) {
 		if newTransaction.Type == TTInvalid && len(trDir) == 0 {
 			// type still not set and no direction specified
 			if strings.Contains(newTransaction.Reference, "CAPITAL GAIN") {
-				// capital gain? Like a dividend? //FIXME
+				// capital gain? Like a dividend?
 				newTransaction.Type = TTDividend
 			} else if reDividendText.MatchString(newTransaction.Reference) {
 				// text matches dividend

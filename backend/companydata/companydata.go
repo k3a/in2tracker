@@ -1,15 +1,11 @@
 package companydata
 
-// GetCompanyData returns company data using the first working provider
-func GetCompanyData(ticker string) (data CompanyData, err error) {
-	//TODO: somehow solve this... different ticker names
-	switch ticker {
-	case "VOW3":
-		ticker = "VOW3.DE"
-	}
+import "github.com/k3a/in2tracker/backend/marketdata"
 
+// GetCompanyData returns company data using the first working provider
+func GetCompanyData(mkt *marketdata.Market, ticker string) (data CompanyData, err error) {
 	for _, p := range Providers {
-		if data, err = p.GetCompanyData(ticker); err != nil {
+		if data, err = p.GetCompanyData(mkt, ticker); err != nil {
 			return
 		}
 	}
